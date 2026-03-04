@@ -13,7 +13,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { BRB-SEQ  } from './workflows/brb-seq'
+include { BRB_SEQ  } from './workflows/brb-seq'
 include { PIPELINE_INITIALISATION } from './subworkflows/local/utils_nfcore_brb-seq_pipeline'
 include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_brb-seq_pipeline'
 include { getGenomeAttribute      } from './subworkflows/local/utils_nfcore_brb-seq_pipeline'
@@ -38,7 +38,7 @@ params.fasta = getGenomeAttribute('fasta')
 //
 // WORKFLOW: Run main analysis pipeline depending on type of input
 //
-workflow CLINICALGENOMICSGBG_BRB-SEQ {
+workflow CLINICALGENOMICSGBG_BRB_SEQ {
 
     take:
     samplesheet // channel: samplesheet read in from --input
@@ -48,11 +48,11 @@ workflow CLINICALGENOMICSGBG_BRB-SEQ {
     //
     // WORKFLOW: Run pipeline
     //
-    BRB-SEQ (
+    BRB_SEQ (
         samplesheet
     )
     emit:
-    multiqc_report = BRB-SEQ.out.multiqc_report // channel: /path/to/multiqc_report.html
+    multiqc_report = BRB_SEQ.out.multiqc_report // channel: /path/to/multiqc_report.html
 }
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -81,7 +81,7 @@ workflow {
     //
     // WORKFLOW: Run main workflow
     //
-    CLINICALGENOMICSGBG_BRB-SEQ (
+    CLINICALGENOMICSGBG_BRB_SEQ (
         PIPELINE_INITIALISATION.out.samplesheet
     )
     //
@@ -94,7 +94,7 @@ workflow {
         params.outdir,
         params.monochrome_logs,
         params.hook_url,
-        CLINICALGENOMICSGBG_BRB-SEQ.out.multiqc_report
+        CLINICALGENOMICSGBG_BRB_SEQ.out.multiqc_report
     )
 }
 

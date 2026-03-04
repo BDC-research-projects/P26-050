@@ -5,6 +5,9 @@
 */
 include { FASTQC                 } from '../modules/nf-core/fastqc/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
+include { PICARD_FILTERSAMREADS  } from '../modules/nf-core/picard/filtersamreads/main'
+include { STAR_GENOMEGENERATE    } from '../modules/nf-core/star/genomegenerate/main'
+include { STARSOLO               } from '../modules/nf-core/star/starsolo/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
@@ -16,7 +19,7 @@ include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_brb-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-workflow BRB-SEQ {
+workflow BRB_SEQ {
 
     take:
     ch_samplesheet // channel: samplesheet read in from --input
@@ -36,7 +39,7 @@ workflow BRB-SEQ {
     //
     // Collate and save software versions
     //
-    def topic_versions = Channel.topic("versions")
+    def topic_versions = channel.topic("versions")
         .distinct()
         .branch { entry ->
             versions_file: entry instanceof Path
