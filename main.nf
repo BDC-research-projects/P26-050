@@ -13,29 +13,17 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
+nextflow.enable.dsl=2
+
 include { BRB_SEQ  } from './workflows/brb-seq'
 include { PIPELINE_INITIALISATION } from './subworkflows/local/utils_nfcore_brb-seq_pipeline'
 include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_brb-seq_pipeline'
-include { getGenomeAttribute      } from './subworkflows/local/utils_nfcore_brb-seq_pipeline'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     GENOME PARAMETER VALUES
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-
-// TODO nf-core: Remove this line if you don't need a FASTA file
-//   This is an example of how to use getGenomeAttribute() to fetch parameters
-//   from igenomes.config using `--genome`
-params.fasta = getGenomeAttribute('fasta')
-
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    NAMED WORKFLOWS FOR PIPELINE
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
-
-//
 // WORKFLOW: Run main analysis pipeline depending on type of input
 //
 workflow CLINICALGENOMICSGBG_BRB_SEQ {
@@ -45,11 +33,12 @@ workflow CLINICALGENOMICSGBG_BRB_SEQ {
 
     main:
 
-    //
-    // WORKFLOW: Run pipeline
-    //
     BRB_SEQ (
-        samplesheet
+        samplesheet,
+        channel.fromPath(params.fasta).map { file -> [ [ id: file.simpleName], file] }.collect(),
+        channel.fromPath(params.gtf).map { file -> [ [ id: file.simpleName], file] }.collect(),
+        params.fasta.endsWith('.gz'),
+        params.gtf.endsWith('.gz')
     )
     emit:
     multiqc_report = BRB_SEQ.out.multiqc_report // channel: /path/to/multiqc_report.html

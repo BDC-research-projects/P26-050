@@ -26,8 +26,15 @@
                 "exists": true,
                 "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.f(ast)?q\\.gz$",
                 "errorMessage": "FastQ file for reads 2 cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
+            },
+            "barcodes": {
+                  "type": "string",
+                  "format": "file-path",
+                  "exists": true,
+                  "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.txt$",
+                  "errorMessage": "Barcodes file cannot contain spaces and must have extension '.csv'"
             }
         },
-        "required": ["sample", "fastq_1"]
+        "required": ["sample", "fastq_1", "fastq_2", "barcodes"]
     }
 }

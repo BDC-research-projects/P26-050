@@ -4,4 +4,6 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - bioconda::fqtk=0.3.1
+  - r-data.table=1.17.8
+  - r-matrix=1.7_5
+  - r-r.utils==2.13.0

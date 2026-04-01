@@ -3,9 +3,11 @@
     IMPORT MODULES / SUBWORKFLOWS / FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
+include { CONVERTMATRIX          } from '../modules/local/convertmatrix/main'
 include { FASTQC                 } from '../modules/nf-core/fastqc/main'
+include { GUNZIP as GUNZIP_FASTA } from '../modules/nf-core/gunzip/main'
+include { GUNZIP as GUNZIP_GTF   } from '../modules/nf-core/gunzip/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
-include { PICARD_FILTERSAMREADS  } from '../modules/nf-core/picard/filtersamreads/main'
 include { STAR_GENOMEGENERATE    } from '../modules/nf-core/star/genomegenerate/main'
 include { STARSOLO               } from '../modules/nf-core/star/starsolo/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
@@ -23,18 +25,60 @@ workflow BRB_SEQ {
 
     take:
     ch_samplesheet // channel: samplesheet read in from --input
+    ch_fasta       // channel: FASTA file path from --fasta
+    ch_gtf         // channel: GTF file path from --gtf
+    unzip_fasta    // boolean parameter: whether to unzip FASTA file (if gzipped) for STAR genome generation
+    unzip_gtf      // boolean parameter: whether to unzip GTF file (if gzipped) for STAR genome generation
+
     main:
 
     ch_versions = channel.empty()
     ch_multiqc_files = channel.empty()
-    //
-    // MODULE: Run FastQC
-    //
-    FASTQC (
-        ch_samplesheet
+
+    ch_samplesheet
+        .multiMap { meta, reads1, reads2, barcodes_file ->
+            star_fq: [meta, "CB_UMI_Simple", [reads1, reads2].transpose().flatten()]
+            star_barcodes: barcodes_file
+        }
+        .set { ch_input }
+
+    ch_samplesheet
+        .map { meta, reads1, reads2, barcodes_file ->
+            [meta, reads1 + reads2]
+        }
+        .transpose()
+        .set { ch_fastqc_input }
+      
+
+    FASTQC ( ch_fastqc_input )
+    ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{_meta, file -> file})
+
+    if (unzip_fasta) {
+        GUNZIP_FASTA ( ch_fasta )
+        ch_fasta = GUNZIP_FASTA.out.gunzip.collect()
+    }
+
+    if (unzip_gtf) {
+        GUNZIP_GTF ( ch_gtf )
+        ch_gtf = GUNZIP_GTF.out.gunzip.collect()
+    }
+
+    STAR_GENOMEGENERATE (
+        ch_fasta,
+        ch_gtf
     )
-    ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]})
-    ch_versions = ch_versions.mix(FASTQC.out.versions.first())
+
+    STARSOLO (
+        ch_input.star_fq.dump(),
+        ch_input.star_barcodes,
+        STAR_GENOMEGENERATE.out.index.collect(),
+    )
+    ch_versions = ch_versions.mix(STARSOLO.out.versions)
+    ch_multiqc_files = ch_multiqc_files.mix(STARSOLO.out.log_final.map { _meta, file -> file } )
+
+    CONVERTMATRIX (
+        STARSOLO.out.counts
+    )
 
     //
     // Collate and save software versions
@@ -106,7 +150,8 @@ workflow BRB_SEQ {
         []
     )
 
-    emit:multiqc_report = MULTIQC.out.report.toList() // channel: /path/to/multiqc_report.html
+    emit:
+    multiqc_report = MULTIQC.out.report.toList() // channel: /path/to/multiqc_report.html
     versions       = ch_versions                 // channel: [ path(versions.yml) ]
 
 }
