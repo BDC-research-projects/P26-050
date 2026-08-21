@@ -117,7 +117,6 @@ workflow BRB_SEQ {
             ch_fasta,
             ch_gtf
         )
-        ch_versions = ch_versions.mix(STAR_GENOMEGENERATE.out.versions)
         ch_star_index_final = STAR_GENOMEGENERATE.out.index.collect()
 
         // Only publish the index when the pipeline generated it itself
@@ -132,7 +131,6 @@ workflow BRB_SEQ {
         ch_input.star_barcodes,
         ch_star_index_final,
     )
-    ch_versions = ch_versions.mix(STARSOLO.out.versions)
     ch_multiqc_files = ch_multiqc_files.mix(STARSOLO.out.log_final.map { _meta, file -> file } )
 
     // All STARsolo outputs, published together under a single "starsolo" directory

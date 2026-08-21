@@ -12,6 +12,7 @@ process BARCODESWHITELIST {
 
     output:
     tuple val(meta), path("*.whitelist.txt"), emit: whitelist
+    tuple val("${task.process}"), val('gawk'), eval("awk -Wversion | sed '1!d; s/.*Awk //; s/,.*//'"), emit: versions_gawk, topic: versions
 
     when:
     task.ext.when == null || task.ext.when
