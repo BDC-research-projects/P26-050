@@ -35,6 +35,6 @@
                   "errorMessage": "Barcodes file cannot contain spaces and must have extension '.tsv', with header columns 'sample_id' and 'barcode'"
             }
         },
-        "required": ["sample", "fastq_1", "fastq_2", "barcodes"]
+        "required": ["udi", "fastq_1", "fastq_2", "barcodes"]
     }
 }
