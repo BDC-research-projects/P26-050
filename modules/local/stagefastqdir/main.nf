@@ -17,7 +17,7 @@ process STAGEFASTQDIR {
     task.ext.when == null || task.ext.when
 
     script:
-    def read_names = (reads instanceof List ? reads : [reads]).collect { it.name }.join(' ')
+    def read_names = (reads instanceof List ? reads : [reads]).collect {file -> file.name }.join(' ')
     """
     mkdir fastq_dir
     for fastq in ${read_names}; do

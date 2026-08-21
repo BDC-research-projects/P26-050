@@ -162,6 +162,10 @@ workflow PIPELINE_COMPLETION {
 //
 def validateInputParameters() {
     genomeExistsError()
+
+    if (!params.star_index && (!params.fasta || !params.gtf)) {
+        error("Please provide either --star_index, or both --fasta and --gtf.")
+    }
 }
 
 //

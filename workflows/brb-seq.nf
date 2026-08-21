@@ -30,6 +30,7 @@ workflow BRB_SEQ {
     ch_samplesheet // channel: samplesheet read in from --input
     ch_fasta       // channel: FASTA file path from --fasta
     ch_gtf         // channel: GTF file path from --gtf
+    ch_star_index  // channel: pre-built STAR index directory from --star_index (optional)
     unzip_fasta    // boolean parameter: whether to unzip FASTA file (if gzipped) for STAR genome generation
     unzip_gtf      // boolean parameter: whether to unzip GTF file (if gzipped) for STAR genome generation
 
@@ -59,7 +60,7 @@ workflow BRB_SEQ {
         .set { ch_input }
 
     ch_samplesheet
-        .map { meta, reads1, reads2, barcodes_file ->
+        .map { meta, reads1, reads2, _barcodes_file ->
             [meta, reads1 + reads2]
         }
         .transpose()
@@ -97,25 +98,31 @@ workflow BRB_SEQ {
     FQTK ( ch_fqtk_input )
     ch_multiqc_files = ch_multiqc_files.mix(FQTK.out.metrics.map { _meta, file -> file })
 
-    if (unzip_fasta) {
-        GUNZIP_FASTA ( ch_fasta )
-        ch_fasta = GUNZIP_FASTA.out.gunzip.collect()
-    }
+    if (params.star_index) {
+        ch_star_index_final = ch_star_index
+    } else {
+        if (unzip_fasta) {
+            GUNZIP_FASTA ( ch_fasta )
+            ch_fasta = GUNZIP_FASTA.out.gunzip.collect()
+        }
 
-    if (unzip_gtf) {
-        GUNZIP_GTF ( ch_gtf )
-        ch_gtf = GUNZIP_GTF.out.gunzip.collect()
-    }
+        if (unzip_gtf) {
+            GUNZIP_GTF ( ch_gtf )
+            ch_gtf = GUNZIP_GTF.out.gunzip.collect()
+        }
 
-    STAR_GENOMEGENERATE (
-        ch_fasta,
-        ch_gtf
-    )
+        STAR_GENOMEGENERATE (
+            ch_fasta,
+            ch_gtf
+        )
+        ch_versions = ch_versions.mix(STAR_GENOMEGENERATE.out.versions)
+        ch_star_index_final = STAR_GENOMEGENERATE.out.index.collect()
+    }
 
     STARSOLO (
         ch_input.star_fq,
         ch_input.star_barcodes,
-        STAR_GENOMEGENERATE.out.index.collect(),
+        ch_star_index_final,
     )
     ch_versions = ch_versions.mix(STARSOLO.out.versions)
     ch_multiqc_files = ch_multiqc_files.mix(STARSOLO.out.log_final.map { _meta, file -> file } )

@@ -33,12 +33,23 @@ workflow CLINICALGENOMICSGBG_BRB_SEQ {
 
     main:
 
+    ch_fasta = params.fasta
+        ? channel.fromPath(params.fasta).map { file -> [ [ id: file.simpleName], file] }.collect()
+        : channel.empty()
+    ch_gtf = params.gtf
+        ? channel.fromPath(params.gtf).map { file -> [ [ id: file.simpleName], file] }.collect()
+        : channel.empty()
+    ch_star_index = params.star_index
+        ? channel.fromPath(params.star_index).map { file -> [ [ id: file.simpleName], file] }.collect()
+        : channel.empty()
+
     BRB_SEQ (
         samplesheet,
-        channel.fromPath(params.fasta).map { file -> [ [ id: file.simpleName], file] }.collect(),
-        channel.fromPath(params.gtf).map { file -> [ [ id: file.simpleName], file] }.collect(),
-        params.fasta.endsWith('.gz'),
-        params.gtf.endsWith('.gz')
+        ch_fasta,
+        ch_gtf,
+        ch_star_index,
+        params.fasta ? params.fasta.endsWith('.gz') : false,
+        params.gtf ? params.gtf.endsWith('.gz') : false
     )
     emit:
     multiqc_report = BRB_SEQ.out.multiqc_report // channel: /path/to/multiqc_report.html
