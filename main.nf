@@ -76,7 +76,7 @@ workflow {
         params.validate_params,
         params.monochrome_logs,
         args,
-        params.outdir,
+        workflow.outputDir,
         params.input,
         params.help,
         params.help_full,
@@ -96,7 +96,7 @@ workflow {
         params.email,
         params.email_on_fail,
         params.plaintext_email,
-        params.outdir,
+        workflow.outputDir,
         params.monochrome_logs,
         params.hook_url,
         CLINICALGENOMICSGBG_BRB_SEQ.out.multiqc_report
