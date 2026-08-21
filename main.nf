@@ -42,6 +42,10 @@ workflow CLINICALGENOMICSGBG_BRB_SEQ {
     )
     emit:
     multiqc_report = BRB_SEQ.out.multiqc_report // channel: /path/to/multiqc_report.html
+    multiqc        = BRB_SEQ.out.multiqc        // channel: multiqc report + data + plots, for publishing
+    starsolo       = BRB_SEQ.out.starsolo       // channel: STARsolo alignment + count outputs, for publishing
+    umi_counts     = BRB_SEQ.out.umi_counts     // channel: per-sample UMI/read count matrices, for publishing
+    fqtk           = BRB_SEQ.out.fqtk           // channel: FQTK demultiplexed FASTQs + metrics, for publishing
 }
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -85,6 +89,36 @@ workflow {
         params.hook_url,
         CLINICALGENOMICSGBG_BRB_SEQ.out.multiqc_report
     )
+
+    publish:
+    multiqc    = CLINICALGENOMICSGBG_BRB_SEQ.out.multiqc
+    starsolo   = CLINICALGENOMICSGBG_BRB_SEQ.out.starsolo
+    umi_counts = CLINICALGENOMICSGBG_BRB_SEQ.out.umi_counts
+    fqtk       = CLINICALGENOMICSGBG_BRB_SEQ.out.fqtk
+}
+
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    WORKFLOW OUTPUTS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+
+output {
+    multiqc {
+        path 'multiqc'
+    }
+    starsolo {
+        path 'starsolo'
+    }
+    umi_counts {
+        path 'umi_counts'
+    }
+    fqtk {
+        // fqtk output file names are not sample-sheet-meta-prefixed, so
+        // publish each multiplexed run's demux outputs into its own
+        // subdirectory to avoid collisions across runs.
+        path { meta, _files -> "fastq/${meta.id}" }
+    }
 }
 
 /*

@@ -120,9 +120,22 @@ workflow BRB_SEQ {
     ch_versions = ch_versions.mix(STARSOLO.out.versions)
     ch_multiqc_files = ch_multiqc_files.mix(STARSOLO.out.log_final.map { _meta, file -> file } )
 
+    // All STARsolo outputs, published together under a single "starsolo" directory
+    // (replicates the process-wide publishDir behavior previously configured).
+    ch_starsolo_outputs = STARSOLO.out.counts
+        .mix(STARSOLO.out.log_final)
+        .mix(STARSOLO.out.log_out)
+        .mix(STARSOLO.out.log_progress)
+        .mix(STARSOLO.out.summary)
+
     CONVERTMATRIX (
         STARSOLO.out.counts.join( ch_barcodes )
     )
+
+    // All FQTK outputs (demuxed FASTQs, metrics, unmatched reads), published together.
+    ch_fqtk_outputs = FQTK.out.sample_fastq
+        .mix(FQTK.out.metrics)
+        .mix(FQTK.out.most_frequent_unmatched)
 
     //
     // Collate and save software versions
@@ -194,8 +207,17 @@ workflow BRB_SEQ {
         []
     )
 
+    // All MultiQC outputs (report, data, plots), published together.
+    ch_multiqc_outputs = MULTIQC.out.report
+        .mix(MULTIQC.out.data)
+        .mix(MULTIQC.out.plots)
+
     emit:
     multiqc_report = MULTIQC.out.report.toList() // channel: /path/to/multiqc_report.html
+    multiqc        = ch_multiqc_outputs          // channel: multiqc report + data + plots, for publishing
+    starsolo       = ch_starsolo_outputs         // channel: STARsolo alignment + count outputs, for publishing
+    umi_counts     = CONVERTMATRIX.out.tsv       // channel: per-sample UMI/read count matrices, for publishing
+    fqtk           = ch_fqtk_outputs             // channel: FQTK demultiplexed FASTQs + metrics, for publishing
     versions       = ch_versions                 // channel: [ path(versions.yml) ]
 
 }
