@@ -127,8 +127,7 @@ output {
         path 'umi_counts'
     }
     fqtk {
-        // Assuming all sample IDs are globally unique
-        path "fastq"
+        path { meta, _file -> "fastq/${meta.id}"}
     }
     star_index {
         path 'star_index'
