@@ -13,6 +13,9 @@ The directories listed below will be created in the results directory after the 
 The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes data using the following steps:
 
 - [FastQC](#fastqc) - Raw read QC
+- [FQTK](#fqtk) - Demultiplexing of pooled BRB-seq FASTQ files
+- [STARsolo](#starsolo) - Genome index generation, alignment and per-cell/barcode quantification
+- [CONVERTMATRIX](#convertmatrix) - Per-sample UMI/read count matrix, with columns labelled by sample name
 - [MultiQC](#multiqc) - Aggregate report describing results and QC from the whole pipeline
 - [Pipeline information](#pipeline-information) - Report metrics generated during the workflow execution
 
@@ -28,6 +31,57 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 </details>
 
 [FastQC](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) gives general quality metrics about your sequenced reads. It provides information about the quality score distribution across your reads, per base sequence content (%A/T/G/C), adapter contamination and overrepresented sequences. For further reading and documentation see the [FastQC help pages](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/).
+
+### FQTK
+
+<details markdown="1">
+<summary>Output files</summary>
+
+- `fastq/<sample>/`
+  - `<sample_id>.R1.fq.gz`, `<sample_id>.R2.fq.gz`: demultiplexed FASTQ files for each `sample_id` listed in the sample's `barcodes` TSV.
+  - `unmatched_R1.fq.gz`, `unmatched_R2.fq.gz`: reads whose cell barcode did not match any `sample_id` in the barcodes file.
+  - `demux-metrics.txt`: per-barcode demultiplexing metrics.
+
+</details>
+
+The pooled reads referenced in the samplesheet contain multiple biological samples multiplexed together via cell barcodes (read structure `14B14M` for read 1, `90T` for read 2). [fqtk](https://github.com/fulcrumgenomics/fqtk) demultiplexes these into per-sample FASTQ files using the `barcodes` TSV supplied for that sample, for QC and archival purposes. STARsolo (below) still aligns and quantifies the original, pooled FASTQ files directly - it is not affected by this step.
+
+### STARsolo
+
+<details markdown="1">
+<summary>Output files</summary>
+
+- `starsolo/`
+  - `<sample>_starsolo.Solo.out/`: per-cell/barcode gene counts and summary statistics, including `Gene/Summary.csv`.
+  - `<sample>_starsolo.Log.final.out`, `<sample>_starsolo.Log.out`, `<sample>_starsolo.Log.progress.out`: STAR alignment logs.
+
+</details>
+
+[STARsolo](https://github.com/alexdobin/STAR) aligns the pooled, multiplexed FASTQ files against the reference genome and quantifies reads per cell barcode/UMI. The barcode whitelist used here is derived from the `barcodes` TSV (with the `sample_id` column stripped, since STARsolo's `--soloCBwhitelist` does not support sample names).
+
+### CONVERTMATRIX
+
+<details markdown="1">
+<summary>Output files</summary>
+
+- `umi_counts/`
+  - `<sample>.tsv`: gene x sample UMI/read count matrix, with columns labelled by `sample_id` (looked up from the `barcodes` TSV) instead of raw cell barcodes.
+
+</details>
+
+CONVERTMATRIX reformats the STARsolo per-barcode count matrix into a gene x sample table, replacing barcode column headers with the corresponding biological sample names.
+
+### STAR index
+
+<details markdown="1">
+<summary>Output files</summary>
+
+- `star_index/`
+  - STAR genome index files, only present if `--save_star_index` was set and the pipeline generated the index itself (i.e. `--star_index` was not supplied).
+
+</details>
+
+If a pre-built index is supplied via `--star_index`, genome generation is skipped and this directory is not created. See [usage docs](usage.md#reference-genome-files) for details.
 
 ### MultiQC
 

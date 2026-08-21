@@ -7,10 +7,10 @@
     "items": {
         "type": "object",
         "properties": {
-            "sample": {
+            "udi": {
                 "type": "string",
                 "pattern": "^\\S+$",
-                "errorMessage": "Sample name must be provided and cannot contain spaces",
+                "errorMessage": "UDI name must be provided and cannot contain spaces",
                 "meta": ["id"]
             },
             "fastq_1": {

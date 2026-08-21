@@ -4,7 +4,7 @@
 
 ## Introduction
 
-<!-- TODO nf-core: Add documentation about anything specific to running your pipeline. For general topics, please point to (and add to) the main nf-core website. -->
+ClinicalGenomicsGBG/brb-seq processess sequencing data generated using [Alithea's BRB-seq technology](https://alitheagenomics.com/kits/mercurius-total-blood-brb-seq-kits-blood-rna-seq/) used for 3'-RNA-seq
 
 ## Samplesheet input
 
@@ -14,17 +14,6 @@ You will need to create a samplesheet with information about the samples you wou
 --input '[path to samplesheet file]'
 ```
 
-### Multiple runs of the same sample
-
-The `sample` identifiers have to be the same when you have re-sequenced the same sample more than once e.g. to increase sequencing depth. The pipeline will concatenate the raw reads before performing any downstream analysis. Below is an example for the same sample sequenced across 3 lanes:
-
-```csv title="samplesheet.csv"
-sample,fastq_1,fastq_2
-CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
-CONTROL_REP1,AEG588A1_S1_L003_R1_001.fastq.gz,AEG588A1_S1_L003_R2_001.fastq.gz
-CONTROL_REP1,AEG588A1_S1_L004_R1_001.fastq.gz,AEG588A1_S1_L004_R2_001.fastq.gz
-```
-
 ### Full samplesheet
 
 The pipeline will auto-detect whether a sample is single- or paired-end using the information provided in the samplesheet. The samplesheet can have as many columns as you desire, however, there is a strict requirement for the first 3 columns to match those defined in the table below.
@@ -32,31 +21,57 @@ The pipeline will auto-detect whether a sample is single- or paired-end using th
 A final samplesheet file consisting of both single- and paired-end data may look something like the one below. This is for 6 samples, where `TREATMENT_REP3` has been sequenced twice.
 
 ```csv title="samplesheet.csv"
-sample,fastq_1,fastq_2
-CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
-CONTROL_REP2,AEG588A2_S2_L002_R1_001.fastq.gz,AEG588A2_S2_L002_R2_001.fastq.gz
-CONTROL_REP3,AEG588A3_S3_L002_R1_001.fastq.gz,AEG588A3_S3_L002_R2_001.fastq.gz
-TREATMENT_REP1,AEG588A4_S4_L003_R1_001.fastq.gz,
-TREATMENT_REP2,AEG588A5_S5_L003_R1_001.fastq.gz,
-TREATMENT_REP3,AEG588A6_S6_L003_R1_001.fastq.gz,
-TREATMENT_REP3,AEG588A6_S6_L004_R1_001.fastq.gz,
+udi,fastq_1,fastq_2,barcodes
+MQ-UDI-1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz,mq-udi1-barcodes.tsv
+MQ-UDI-2,AEG588A2_S2_L002_R1_001.fastq.gz,AEG588A2_S2_L002_R2_001.fastq.gz,mq-udi2-barcodes.tsv
+MQ-UDI-3,AEG589A3_S3_L002_R1_001.fastq.gz,AEG588A3_S3_L002_R2_001.fastq.gz,mq-udi3-barcodes.tsv
 ```
 
 | Column      | Description                                                                                                                                                                            |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sample`    | Custom sample name. This entry will be identical for multiple sequencing libraries/runs from the same sample. Spaces in sample names are automatically converted to underscores (`_`). |
+| `udi`       | Unique Dual Index name                                                                                                                                                                 |
 | `fastq_1`   | Full path to FastQ file for Illumina short reads 1. File has to be gzipped and have the extension ".fastq.gz" or ".fq.gz".                                                             |
 | `fastq_2`   | Full path to FastQ file for Illumina short reads 2. File has to be gzipped and have the extension ".fastq.gz" or ".fq.gz".                                                             |
-| `barcodes`  | Full path to a tab-separated `.tsv` file mapping the BRB-seq cell barcodes multiplexed in `fastq_1`/`fastq_2` to biological sample names. Must have a header row with columns `sample_id` and `barcode`. This file is used both to demultiplex the pooled FASTQ files with [fqtk](https://github.com/fulcrumgenomics/fqtk) (for QC/archival purposes) and to label the per-sample columns in the count matrices produced by the pipeline. |
+| `barcodes`  | Full path to a tab-separated `.tsv` file mapping the BRB-seq sample barcodes multiplexed in `fastq_1`/`fastq_2` to biological sample names. Must have a header row with columns `sample_id` and `barcode`. This file is used both to demultiplex the pooled FASTQ files with [fqtk](https://github.com/fulcrumgenomics/fqtk) (for QC/archival purposes) and to label the per-sample columns in the count matrices produced by the pipeline. |
 
 An [example samplesheet](../assets/samplesheet.csv) and an [example barcodes file](../assets/barcodes.tsv) have been provided with the pipeline.
+
+## Reference genome files
+
+The pipeline aligns and quantifies reads with [STARsolo](https://github.com/alexdobin/STAR), which requires a genome index. You can either let the pipeline build this index for you, or supply a pre-built one.
+
+### Building the index from FASTA/GTF
+
+```bash
+--fasta '[path to FASTA file]' --gtf '[path to GTF file]'
+```
+
+If both `--fasta` and `--gtf` are provided, the pipeline runs `STAR_GENOMEGENERATE` to build the STAR index before alignment. FASTA/GTF files may optionally be gzip-compressed.
+
+### Supplying a pre-built STAR index
+
+```bash
+--star_index '[path to STAR index directory]'
+```
+
+If `--star_index` is provided, genome index generation is skipped entirely and `--fasta`/`--gtf` are no longer required. This is useful for skipping the (often lengthy) genome generation step on repeated runs against the same reference.
+
+You must provide either `--star_index`, or both `--fasta` and `--gtf`.
+
+### Saving the generated STAR index
+
+```bash
+--save_star_index
+```
+
+When the pipeline builds the STAR index itself (i.e. `--star_index` was not supplied), set `--save_star_index` to publish it to `<OUTDIR>/star_index/` so it can be reused with `--star_index` in subsequent runs. This has no effect when `--star_index` is supplied, since a pre-built index is never re-published.
 
 ## Running the pipeline
 
 The typical command for running the pipeline is as follows:
 
 ```bash
-nextflow run ClinicalGenomicsGBG/brb-seq --input ./samplesheet.csv --outdir ./results --genome GRCh37 -profile docker
+nextflow run ClinicalGenomicsGBG/brb-seq --input ./samplesheet.csv -profile docker
 ```
 
 This will launch the pipeline with the `docker` configuration profile. See below for more information about profiles.
@@ -65,7 +80,7 @@ Note that the pipeline will create the following files in your working directory
 
 ```bash
 work                # Directory containing the nextflow working files
-<OUTDIR>            # Finished results in specified location (defined with --outdir)
+<OUTDIR>            # Finished results in specified location (defined with --output-dir, default: results)
 .nextflow_log       # Log file from Nextflow
 # Other nextflow hidden files, eg. history of pipeline runs and old logs.
 ```
@@ -87,8 +102,7 @@ with:
 
 ```yaml title="params.yaml"
 input: './samplesheet.csv'
-outdir: './results/'
-genome: 'GRCh37'
+star_index: "./STARgenome/"
 <...>
 ```
 
