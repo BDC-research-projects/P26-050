@@ -18,37 +18,36 @@ tools:
       identifier: null
 
 input:
-  ### TODO nf-core: Add a description of all of the variables used as input
   - - meta:
         type: map
         description: |
           Groovy Map containing sample information
           e.g. `[ id:'sample1' ]`
-    - bam:
+    - bamdir:
+        type: directory
+        description: STARsolo `*.Solo.out` directory containing the raw
+          barcode x gene count matrices
+    - barcodes_tsv:
         type: file
-        description: Sorted BAM/CRAM/SAM file
-        pattern: "*.{bam,cram,sam}"
-        ontologies:
-          - edam: "http://edamontology.org/format_2572" # BAM
-          - edam: "http://edamontology.org/format_2573" # CRAM
-          - edam: "http://edamontology.org/format_3462" # SAM
+        description: Tab-separated file with header columns `sample_id` and
+          `barcode`, mapping each multiplexed cell barcode to a biological
+          sample name
+        pattern: "*.tsv"
 
 output:
-  ### TODO nf-core: Add a description of all of the variables used as output
-  bam:
+  tsv:
     - - meta:
           type: map
           description: |
             Groovy Map containing sample information
             e.g. `[ id:'sample1' ]`
-      - "*.bam":
+      - "*.tsv":
           type: file
-          description: Sorted BAM/CRAM/SAM file
-          pattern: "*.{bam,cram,sam}"
-          ontologies:
-            - edam: "http://edamontology.org/format_2572" # BAM
-            - edam: "http://edamontology.org/format_2573" # CRAM
-            - edam: "http://edamontology.org/format_3462" # SAM
+          description: |
+            Feature x sample UMI/read count matrices (`*.umi_counts.tsv` and
+            `*.read_counts.tsv`). Columns are labelled with the sample names
+            from `barcodes_tsv` rather than raw cell barcodes.
+          pattern: "*.tsv"
   versions_convertmatrix:
     - - "${task.process}":
           type: string

@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/modules/meta-schema.json
+name: "stagefastqdir"
+description: Symlink a set of loose FASTQ files into a single directory
+keywords:
+  - fastq
+  - staging
+tools:
+  - "coreutils":
+      description: "GNU core utilities"
+      homepage: "https://www.gnu.org/software/coreutils/"
+      documentation: "https://www.gnu.org/software/coreutils/manual/coreutils.html"
+      licence:
+        - "GPL-3.0-or-later"
+      identifier: ""
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. `[ id:'sample1' ]`
+    - reads:
+        type: file
+        description: One or more FASTQ files belonging to the same sample
+        pattern: "*.{fastq,fq}.gz"
+
+output:
+  dir:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. `[ id:'sample1' ]`
+      - "fastq_dir":
+          type: directory
+          description: Directory containing symlinks to all input FASTQ files,
+            required by the FQTK module's `fastq_folder` input
+authors:
+  - "@Schmytzi"
+maintainers:
+  - "@Schmytzi"

@@ -3,11 +3,14 @@
     IMPORT MODULES / SUBWORKFLOWS / FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
+include { BARCODESWHITELIST      } from '../modules/local/barcodeswhitelist/main'
 include { CONVERTMATRIX          } from '../modules/local/convertmatrix/main'
 include { FASTQC                 } from '../modules/nf-core/fastqc/main'
+include { FQTK                   } from '../modules/nf-core/fqtk/main'
 include { GUNZIP as GUNZIP_FASTA } from '../modules/nf-core/gunzip/main'
 include { GUNZIP as GUNZIP_GTF   } from '../modules/nf-core/gunzip/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
+include { STAGEFASTQDIR          } from '../modules/local/stagefastqdir/main'
 include { STAR_GENOMEGENERATE    } from '../modules/nf-core/star/genomegenerate/main'
 include { STARSOLO               } from '../modules/nf-core/star/starsolo/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
@@ -35,10 +38,23 @@ workflow BRB_SEQ {
     ch_versions = channel.empty()
     ch_multiqc_files = channel.empty()
 
+    //
+    // Barcodes TSV (sample_id, barcode) referenced per-sample in the samplesheet.
+    // Used to: (1) build a plain STARsolo whitelist, (2) demultiplex with FQTK,
+    // and (3) label CONVERTMATRIX output columns with sample names.
+    //
+    ch_barcodes = ch_samplesheet
+        .map { meta, _reads1, _reads2, barcodes_file -> [meta, barcodes_file] }
+
+    // STARsolo's --soloCBwhitelist does not support sample names, so the
+    // sample_id column has to be stripped before it can be used as a whitelist.
+    BARCODESWHITELIST ( ch_barcodes )
+
     ch_samplesheet
-        .multiMap { meta, reads1, reads2, barcodes_file ->
+        .join( BARCODESWHITELIST.out.whitelist )
+        .multiMap { meta, reads1, reads2, _barcodes_file, whitelist ->
             star_fq: [meta, "CB_UMI_Simple", [reads1, reads2].transpose().flatten()]
-            star_barcodes: barcodes_file
+            star_barcodes: whitelist
         }
         .set { ch_input }
 
@@ -52,6 +68,34 @@ workflow BRB_SEQ {
 
     FASTQC ( ch_fastqc_input )
     ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{_meta, file -> file})
+
+    //
+    // Demultiplex the multiplexed FASTQs with FQTK for QC/archival purposes only.
+    // STARsolo further below still consumes the original multiplexed FASTQs.
+    //
+    ch_samplesheet
+        .map { meta, reads1, reads2, _barcodes_file ->
+            [meta, reads1 + reads2]
+        }
+        .set { ch_fqtk_reads }
+
+    STAGEFASTQDIR ( ch_fqtk_reads )
+
+    ch_samplesheet
+        .map { meta, reads1, reads2, barcodes_file ->
+            def read_structure_pairs = [reads1, reads2].transpose().collectMany { reads1_file, reads2_file ->
+                [[reads1_file.name, '14B14M'], [reads2_file.name, '90T']]
+            }
+            [meta, barcodes_file, read_structure_pairs]
+        }
+        .join( STAGEFASTQDIR.out.dir )
+        .map { meta, barcodes_file, read_structure_pairs, fastq_dir ->
+            [meta, barcodes_file, fastq_dir, read_structure_pairs]
+        }
+        .set { ch_fqtk_input }
+
+    FQTK ( ch_fqtk_input )
+    ch_multiqc_files = ch_multiqc_files.mix(FQTK.out.metrics.map { _meta, file -> file })
 
     if (unzip_fasta) {
         GUNZIP_FASTA ( ch_fasta )
@@ -69,7 +113,7 @@ workflow BRB_SEQ {
     )
 
     STARSOLO (
-        ch_input.star_fq.dump(),
+        ch_input.star_fq,
         ch_input.star_barcodes,
         STAR_GENOMEGENERATE.out.index.collect(),
     )
@@ -77,7 +121,7 @@ workflow BRB_SEQ {
     ch_multiqc_files = ch_multiqc_files.mix(STARSOLO.out.log_final.map { _meta, file -> file } )
 
     CONVERTMATRIX (
-        STARSOLO.out.counts
+        STARSOLO.out.counts.join( ch_barcodes )
     )
 
     //

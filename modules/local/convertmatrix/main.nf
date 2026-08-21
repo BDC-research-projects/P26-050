@@ -26,7 +26,7 @@ process CONVERTMATRIX {
         'community.wave.seqera.io/library/r-data.table_r-matrix_r-r.utils:b228e2390ddbd670' }"
 
     input:
-    tuple val(meta), path(bamdir)
+    tuple val(meta), path(bamdir), path(barcodes_tsv)
 
     output:
     tuple val(meta)             , path("*.tsv")                                                                                 , emit: tsv
@@ -45,17 +45,19 @@ process CONVERTMATRIX {
     matrix_dir <- "${bamdir}/Gene/raw"
     feature.names = fread(file.path(matrix_dir, "features.tsv.gz"), header = FALSE, stringsAsFactors = FALSE, data.table = F)
     barcode.names = fread(file.path(matrix_dir, "barcodes.tsv.gz"), header = FALSE, stringsAsFactors = FALSE, data.table = F)
+    barcode_to_sample = fread("${barcodes_tsv}", header = TRUE, stringsAsFactors = FALSE, data.table = F)
+    sample.names = barcode_to_sample\$sample_id[match(barcode.names\$V1, barcode_to_sample\$barcode)]
     f <- gzfile(file.path(matrix_dir, "umiDedup-1MM_Directional.mtx.gz"), "r")
     mat <- as.data.frame(as.matrix(readMM(f)))
     close(f)
-    colnames(mat) <- barcode.names\$V1
+    colnames(mat) <- sample.names
     rownames(mat) <- feature.names\$V1
     fwrite(mat, file = "${prefix}.umi_counts.tsv", sep = "\\t", quote = F, row.names = T,
     col.names = T)
     f <- gzfile(file.path(matrix_dir, "umiDedup-NoDedup.mtx.gz"), "r")
     mat <- as.data.frame(as.matrix(readMM(f)))
     close(f)
-    colnames(mat) <- barcode.names\$V1
+    colnames(mat) <- sample.names
     rownames(mat) <- feature.names\$V1
     fwrite(mat, file = "${prefix}.read_counts.tsv", sep = "\\t", quote = F, row.names = T,
     col.names = T)
