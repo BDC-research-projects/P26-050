@@ -98,6 +98,8 @@ workflow BRB_SEQ {
     FQTK ( ch_fqtk_input )
     ch_multiqc_files = ch_multiqc_files.mix(FQTK.out.metrics.map { _meta, file -> file })
 
+    ch_star_index_outputs = channel.empty()
+
     if (params.star_index) {
         ch_star_index_final = ch_star_index
     } else {
@@ -117,6 +119,12 @@ workflow BRB_SEQ {
         )
         ch_versions = ch_versions.mix(STAR_GENOMEGENERATE.out.versions)
         ch_star_index_final = STAR_GENOMEGENERATE.out.index.collect()
+
+        // Only publish the index when the pipeline generated it itself
+        // (a user-supplied --star_index is never re-published).
+        if (params.save_star_index) {
+            ch_star_index_outputs = STAR_GENOMEGENERATE.out.index
+        }
     }
 
     STARSOLO (
@@ -225,6 +233,7 @@ workflow BRB_SEQ {
     starsolo       = ch_starsolo_outputs         // channel: STARsolo alignment + count outputs, for publishing
     umi_counts     = CONVERTMATRIX.out.tsv       // channel: per-sample UMI/read count matrices, for publishing
     fqtk           = ch_fqtk_outputs             // channel: FQTK demultiplexed FASTQs + metrics, for publishing
+    star_index     = ch_star_index_outputs       // channel: generated STAR index, for publishing (only when --save_star_index is set)
     versions       = ch_versions                 // channel: [ path(versions.yml) ]
 
 }

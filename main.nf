@@ -57,6 +57,7 @@ workflow CLINICALGENOMICSGBG_BRB_SEQ {
     starsolo       = BRB_SEQ.out.starsolo       // channel: STARsolo alignment + count outputs, for publishing
     umi_counts     = BRB_SEQ.out.umi_counts     // channel: per-sample UMI/read count matrices, for publishing
     fqtk           = BRB_SEQ.out.fqtk           // channel: FQTK demultiplexed FASTQs + metrics, for publishing
+    star_index     = BRB_SEQ.out.star_index     // channel: generated STAR index, for publishing (only when --save_star_index is set)
 }
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -106,6 +107,7 @@ workflow {
     starsolo   = CLINICALGENOMICSGBG_BRB_SEQ.out.starsolo
     umi_counts = CLINICALGENOMICSGBG_BRB_SEQ.out.umi_counts
     fqtk       = CLINICALGENOMICSGBG_BRB_SEQ.out.fqtk
+    star_index = CLINICALGENOMICSGBG_BRB_SEQ.out.star_index
 }
 
 /*
@@ -129,6 +131,9 @@ output {
         // publish each multiplexed run's demux outputs into its own
         // subdirectory to avoid collisions across runs.
         path { meta, _files -> "fastq/${meta.id}" }
+    }
+    star_index {
+        path 'star_index'
     }
 }
 
