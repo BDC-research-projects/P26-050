@@ -127,10 +127,8 @@ output {
         path 'umi_counts'
     }
     fqtk {
-        // fqtk output file names are not sample-sheet-meta-prefixed, so
-        // publish each multiplexed run's demux outputs into its own
-        // subdirectory to avoid collisions across runs.
-        path { meta, _files -> "fastq/${meta.id}" }
+        // Assuming all sample IDs are globally unique
+        path "fastq"
     }
     star_index {
         path 'star_index'

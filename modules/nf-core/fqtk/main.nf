@@ -35,7 +35,7 @@ process FQTK {
         demux \\
             --inputs ${fastqs} \\
             --read-structures ${read_structures} \\
-            --output output/ \\
+            --output . \\
             --sample-metadata ${sample_sheet} \\
             ${args}
     """
