@@ -57,7 +57,7 @@
                     "exists": true,
                     "mimetype": "text/plain",
                     "pattern": "^\\S+\\.fn?a(sta)?(\\.gz)?$",
-                    "description": "Path to FASTA genome file.",
+                    "description": "Path to FASTA genome file. Required if --star_index is not supplied.",
                     "fa_icon": "far fa-file-code"
                 },
                 "gtf": {
@@ -66,7 +66,7 @@
                     "exists": true,
                     "mimetype": "text/plain",
                     "pattern": "^\\S+\\.gtf(\\.gz)?$",
-                    "description": "Path to GTF annotation file.",
+                    "description": "Path to GTF annotation file. Required if --star_index is not supplied.",
                     "fa_icon": "far fa-file-code"
                 },
                 "star_index": {
