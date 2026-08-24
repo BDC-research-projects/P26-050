@@ -9,32 +9,37 @@
 > [!NOTE]
 > If you are new to Nextflow and nf-core, please refer to [this page](https://nf-co.re/docs/usage/installation) on how to set-up Nextflow.
 
-<!-- TODO nf-core: Describe the minimum required steps to execute the pipeline, e.g. how to prepare samplesheets.
-     Explain what rows and columns represent. For instance (please edit as appropriate):
-
-First, prepare a samplesheet with your input data that looks as follows:
+This pipeline processes pooled BRB-seq FASTQ files and demultiplexes them using a sample barcode TSV before alignment and counting. Prepare a samplesheet listing each UDI run and the corresponding FASTQ pair plus barcode file.
 
 `samplesheet.csv`:
 
 ```csv
-sample,fastq_1,fastq_2
-CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
+udi,fastq_1,fastq_2,barcodes
+MQ-UDI-1,/path/to/fastq/AEG588A1_S1_L002_R1_001.fastq.gz,/path/to/fastq/AEG588A1_S1_L002_R2_001.fastq.gz,/path/to/barcodes/AEG588A1.barcodes.tsv
+MQ-UDI-2,/path/to/fastq/AEG588A2_S2_L002_R1_001.fastq.gz,/path/to/fastq/AEG588A2_S2_L002_R2_001.fastq.gz,/path/to/barcodes/AEG588A2.barcodes.tsv
 ```
 
-Each row represents a fastq file (single-end) or a pair of fastq files (paired end).
+Each row describes one BRB-seq sample set. The first four columns are mandatory and must be provided in this order:
 
--->
+- `udi`: unique dual index name
+- `fastq_1`: path to read 1 FASTQ (`.fq.gz` or `.fastq.gz`)
+- `fastq_2`: path to read 2 FASTQ (`.fq.gz` or `.fastq.gz`)
+- `barcodes`: path to a tab-separated barcode file with columns `sample_id` and `barcode`
 
-Now, you can run the pipeline using:
+The pipeline accepts additional columns if needed, but the first four columns must match the schema above. A full example with barcode layout is included in [`assets/samplesheet.csv`](assets/samplesheet.csv) and [`assets/barcodes.tsv`](assets/barcodes.tsv).
 
-<!-- TODO nf-core: update the following command to include all required parameters for a minimal example -->
+Run the pipeline with:
 
 ```bash
 nextflow run ClinicalGenomicsGBG/brb-seq \
    -profile <docker/singularity/.../institute> \
    --input samplesheet.csv \
-   --outdir <OUTDIR>
+   --fasta reference_genome.fa \
+   --gtf reference_genome.gtf \
+   -output-dir <OUTDIR>
 ```
+
+If you have a pre-computed STAR index for your genome, supply it using `--star_index` and omit `--fasta` and `--gtf`.
 
 > [!WARNING]
 > Please provide pipeline parameters via the CLI or Nextflow `-params-file` option. Custom config files including those provided by the `-c` Nextflow option can be used to provide any configuration _**except for parameters**_; see [docs](https://nf-co.re/docs/usage/getting_started/configuration#custom-configuration-files).
