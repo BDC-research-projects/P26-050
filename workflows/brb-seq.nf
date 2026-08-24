@@ -85,7 +85,7 @@ workflow BRB_SEQ {
     ch_samplesheet
         .map { meta, reads1, reads2, barcodes_file ->
             def read_structure_pairs = [reads1, reads2].transpose().collectMany { reads1_file, reads2_file ->
-                [[reads1_file.name, '14B14M'], [reads2_file.name, '90T']]
+                [[reads1_file.name, '14B14T'], [reads2_file.name, '90T']]
             }
             [meta, barcodes_file, read_structure_pairs]
         }
