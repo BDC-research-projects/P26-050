@@ -48,10 +48,6 @@ If you have a pre-computed STAR index for your genome, supply it using `--star_i
 
 ClinicalGenomicsGBG/brb-seq was originally written by Daniel Schmitz.
 
-We thank the following people for their extensive assistance in the development of this pipeline:
-
-<!-- TODO nf-core: If applicable, make list of people who have also contributed -->
-
 ## Contributions and Support
 
 If you would like to contribute to this pipeline, please see the [contributing guidelines](.github/CONTRIBUTING.md).
