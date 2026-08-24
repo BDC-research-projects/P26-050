@@ -146,9 +146,10 @@ workflow BRB_SEQ {
     )
 
     // All FQTK outputs (demuxed FASTQs, metrics, unmatched reads), published together.
-    ch_fqtk_outputs = FQTK.out.sample_fastq.transpose()
+    ch_fqtk_outputs = FQTK.out.sample_fastq
         .mix(FQTK.out.metrics)
         .mix(FQTK.out.most_frequent_unmatched)
+        .transpose()
 
     //
     // Collate and save software versions
