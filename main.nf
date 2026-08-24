@@ -128,7 +128,7 @@ output {
     }
     fqtk {
         path { meta, file -> 
-            file >> "fqtk/${meta.id}/${file.name}"
+            file >> "fastq/${meta.id}/${file.name}"
         }
     }
     star_index {
