@@ -127,7 +127,9 @@ output {
         path 'umi_counts'
     }
     fqtk {
-        path { meta, _file -> "fastq/${meta.id}"}
+        path { meta, file -> 
+            file >> "fqtk/${meta.id}/${file.name}"
+        }
     }
     star_index {
         path 'star_index'
